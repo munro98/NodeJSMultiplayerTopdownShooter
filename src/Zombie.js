@@ -31,21 +31,12 @@ class Zombie extends Actor {
       
       this.path = level.aStarSearch(zombieGrid.x, zombieGrid.y, mouseWorldGrid.x, mouseWorldGrid.y, cameraPosition);
       this.currentIndexOnPath = 0;
-
-      //console.log("tick");
     }
-
-
-    //console.log("p: " + this.currentIndexOnPath);
-    
 
     if (this.path.length > 0 && this.currentIndexOnPath < this.path.length) {
       this.targetPos = new Vec2(this.path[this.currentIndexOnPath].x * level.tileSize + 16, this.path[this.currentIndexOnPath].y * level.tileSize +16);
     }
-    //this.targetPos = new Vec2(30+16, 30+16);
-    //console.log(this.targetPos);
 
-    //var deltaPos = player.posCenter.sub(this.posCenter);
     var deltaPos = this.targetPos.sub(this.posCenter);
 
     if (deltaPos.mag() < level.tileSize) {

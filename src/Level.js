@@ -10,6 +10,8 @@ class Level{
     this.chunkCount = Math.ceil(this.width/this.chunkSize);
     this.chunkMap = new Array(this.chunkCount * this.chunkCount);
 
+    //this.socket = socket;
+
     this.startX = 1;
     this.startY = 1;
     this.endX = 20;
@@ -22,6 +24,34 @@ class Level{
     this.interior = interior;
 
     this.drawsFrame = 0;
+
+
+    this.bullets = new Array();
+
+  }
+
+  updateServer(deltaTime) {
+
+    for (var i = 0; i < this.bullets.length; i++) {
+      this.bullets[i].update(this, deltaTime);
+    }
+
+
+    //Remove dead bullets
+    for (var i = 0; i < this.bullets.length; i++) {
+      if (this.bullets[i].remove) {
+        this.bullets.splice(i, 1);
+        console.log("bullet destroyed");
+
+        i--;
+      }
+    }
+
+
+  }
+
+  updateClient(deltaTime) {
+
 
   }
 

@@ -4,6 +4,7 @@ if (typeof exports !== 'undefined')  {
     global.Vec2 = require('./Vec2.js').Vec2;
     global.Actor = require('./Actor.js').Actor;
     global.PlayerGhost = require('./PlayerGhost.js').PlayerGhost;
+    global.Bullet = require('./Bullet.js').Bullet;
 
     global.Rifle = require('./Gun.js').Rifle;
     global.Pistol = require('./Gun.js').Pistol;
@@ -25,7 +26,11 @@ class Player extends Actor {
 
     this.altWeapon = new Rifle(new Vec2(0,0));
     this.activeWeapon = new Pistol(new Vec2(0,0));
+
     this.downKeys = new Set();
+    this.downKeysFrame = new Set();
+    this.lastDownKeys = new Set();
+
     this.downButtons = new Set();
 
     this.moved = false;
@@ -51,14 +56,49 @@ class Player extends Actor {
   }
 
   updateServer (deltaTime, level, targetPostion){
+
+    this.downKeysFrame = new Set();
+
+    for (var key of this.downKeys) {
+      if (!this.lastDownKeys.has(key)) {
+        this.downKeysFrame.add(key);
+      }
+
+    }
+
+    if (this.downKeysFrame.has(87)) {
+      console.log("Frame");
+    }
+
     this.ghost.update(deltaTime, level, targetPostion);
 
+    if (this.downKeys.has(87)) {
+      this.moved = true;
+    }
+    if (this.downKeys.has(83)) {
+      this.moved = true;
+    }
+
+    if (this.downKeys.has(65)) {
+      this.moved = true;
+    }
+    if (this.downKeys.has(68)) {
+      this.moved = true;
+    }
+
+
+
+    if (this.downKeysFrame.has(87)) {
+      var bullet = new Bullet(this.posCenter, this.activeWeapon.damage); // , -offsetAngle * 180 / Math.PI
+      bullet.vel = new Vec2(0, 1).normalized().mul(this.activeWeapon.bulletSpeed);
+      level.bullets.push(bullet);
+      console.log("bullet created");
+    }
+
+    this.lastDownKeys = new Set(this.downKeys);
   }
 
   update (deltaTime, level){
-
-    //this.ghost.update(deltaTime, level, this);
-    //this.ghost.update(deltaTime, level, this.pos);
 
     var playerCentre = this.pos.add(new Vec2(this.width*0.5, this.width*0.5));
 
@@ -92,9 +132,7 @@ class Player extends Actor {
     }
 
     var deceleration = this.decel * deltaTime;
-    //console.log(this.decel);
     if (inputVec3.mag() == 0) {
-      //var decelerationVec3 = new Vec3(0, 0, 0); TODO Make deceleration normalized
       if (this.newVel.x > 0) {
         this.newVel.x = Math.max(this.newVel.x - deceleration, 0);
       } else {
@@ -106,6 +144,8 @@ class Player extends Actor {
         this.newVel.y = Math.min(this.newVel.y + deceleration, 0);
       }
     }
+
+
 
     /*
     if (downKeysFrame.has(69)) {

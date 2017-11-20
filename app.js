@@ -129,6 +129,9 @@ function update() {
     currentTime = date.getTime() / 1000.0;
     deltaTime = currentTime - previousTime;
 
+
+    level.updateServer(deltaTime);
+
 	users.forEach( function(u) {
 		var p = players[u.id];
         //console.log(p.targetPosition);
@@ -144,11 +147,11 @@ function update() {
         var tpos = p.ghost.pos;
         //console.log(tpos);
 
-        //if (p.moved) {
+        if (p.moved) {
             p.moved = false;
             //sockets[u.id].emit('pos', {x: p.ghost.pos.x, y: p.ghost.pos.y, xv: p.vel.x, yv: p.vel.y});
             sockets[u.id].emit('pos', {x: tpos.x, y: tpos.y, xv: p.vel.x, yv: p.vel.y});
-        //}
+        }
 		
 	});
 
