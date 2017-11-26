@@ -38,6 +38,7 @@ class Player extends Actor {
 
     this.targetPostion = pos.copy();
     this.ghost = new PlayerGhost(pos.copy());
+    this.mouse = new Vec2(0,0);
 
     
   }
@@ -55,7 +56,7 @@ class Player extends Actor {
 
   }
 
-  updateServer (deltaTime, level, targetPostion){
+  updateServer (deltaTime, level, targetPostion, serverNet){
 
     this.downKeysFrame = new Set();
 
@@ -86,16 +87,48 @@ class Player extends Actor {
       this.moved = true;
     }
 
+    var bulletAngle = -Math.atan2(this.mouse.y, this.mouse.x); // In radians
+
+    var spread = this.activeWeapon.spread;
+    bulletAngle += 90 * (Math.PI / 180);
 
 
+/*
     if (this.downKeysFrame.has(87)) {
-      var bullet = new Bullet(this.posCenter, this.activeWeapon.damage); // , -offsetAngle * 180 / Math.PI
-      bullet.vel = new Vec2(0, 1).normalized().mul(this.activeWeapon.bulletSpeed);
+      var bullet = new Bullet(this.ghost.pos.add(new Vec2(this.width * 0.5, this.height * 0.5)), this.activeWeapon.damage); // , -offsetAngle * 180 / Math.PI
+      bullet.vel = this.mouse.normalized().mul(this.activeWeapon.bulletSpeed);
       level.bullets.push(bullet);
-      console.log("bullet created");
+      serverNet.broadcastCreateBullet(bullet);
+      
     }
+    */
+    this.timeSinceLastFire += deltaTime;
+    if (this.timeSinceLastFire > this.activeWeapon.timeBetweenShots && this.downButtons.has(1) && this.activeWeapon.ammo > 0) {
+
+
+      this.timeSinceLastFire = 0;
+      //playSound();
+      for (var i = 0; i < this.activeWeapon.bulletsEachShot; i++) {
+
+        var offsetAngle = bulletAngle + (Math.random() * spread - (spread * 0.5) ) * (Math.PI / 180);
+        var bulletVec2 = new Vec2(Math.sin(offsetAngle), Math.cos(offsetAngle));
+
+        var bullet = new Bullet(this.ghost.pos.add(new Vec2(this.width * 0.5, this.height * 0.5)), this.activeWeapon.damage);
+        bullet.vel = this.mouse.normalized().mul(this.activeWeapon.bulletSpeed);
+        level.bullets.push(bullet);
+        serverNet.broadcastCreateBullet(bullet);
+        //var bullet = new Bullet(playerCentre, this.activeWeapon.damage); // , -offsetAngle * 180 / Math.PI
+        //bullet.vel = bulletVec2.normalized().mul(this.activeWeapon.bulletSpeed);
+        //bulletList.push(bullet);
+        
+      }
+      this.activeWeapon.ammo = this.activeWeapon.ammo - 1;
+    }
+    
 
     this.lastDownKeys = new Set(this.downKeys);
+
+    super.update(deltaTime, level);
   }
 
   update (deltaTime, level){

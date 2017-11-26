@@ -5,23 +5,56 @@ var io = require('socket.io')(http, {
         'pingInterval': 2000,
         'pingTimeout': 5000
     });
+
 var path = require('path');
 var fs = require('fs');
 
 var Vec2 = require('./src/Vec2.js').Vec2;
 var {Level} = require('./src/Level.js');
 var {Player} = require('./src/Player.js');
-//var {Vec2} = require('./src/Vec2.js');
-//var {Vec2} = require('./src/Vec2.js');
 
-var vec = new Vec2(0, 0);
 
 var userCount = 0;
 var users = [];
-var players = {};
+var players = new Array(16);
+var maxPlayers = 16;
 var sockets = {};
 
 var level;
+
+class ServerNetworking {
+  constructor (){
+
+
+  }
+
+  broadcastCreateBullet(b) {
+    //console.log("bullet created");
+    users.forEach( function(u) {
+        //var p = players[u.id];
+        var p = players[u.pid];
+        
+
+        sockets[u.id].emit('createBullet', b.pos.x, b.pos.y, b.damage, b.vel); //
+    });
+
+  }
+
+  broadcastDestroyBullet(index) {
+    //sockets[u.id].emit('destroyBullet', index); //
+    users.forEach( function(u) {
+        //var p = players[u.id];
+        var p = players[u.pid];
+        
+    });
+
+  }
+
+
+}
+
+
+var serverNet = new ServerNetworking();
 
 fs.readFile('res/untitled.json', 'utf8', function(err, data) {
   if (err) throw err;
@@ -48,66 +81,113 @@ app.get('/', function(req, res) {
 });
 
 io.on('connection', function(socket) {
-	console.log("User connected");
+	console.log("User connected " + socket.id);
 
-	socket.emit('msg');
+    var i = 0;
+    for (; i < maxPlayers; i++) {
+        if (players[i] == undefined) {
+            break;
+        }
+    }
+
+    players[i] = new Player(new Vec2(800, 1800));
+
+	//socket.emit('msg');
 
 	var currentPlayer = {
         id: socket.id,
+        pid : i
     };
 
 	users.push(currentPlayer);
-	players[socket.id] = new Player(new Vec2(800, 1800));
 	sockets[socket.id] = socket;
+    players[i].targetPosition = new Vec2(800, 1800);
 
-    players[socket.id].targetPosition = new Vec2(800, 1800);
+    //Send all other players of this one
+    for (var j = 0; j < users.length; j++) {
+        socket.emit('playerConnect', j, {x: 0, y: 0});
+    }
+
+    // Send this player to all others
+    users.forEach( function(u) {
+        var p = players[u.pid];
+        sockets[u.id].emit('playerConnect', i, {x: 0, y: 0});
+
+    });
+
+
+
+
 
 	socket.on('keyDown', function(key){
-		players[socket.id].downKeys.add(key);
-        console.log('down ' + key);
+		players[i].downKeys.add(key);
+        //console.log('down ' + key);
     });
 
     socket.on('keyUp', function(key){
-    	players[socket.id].downKeys.delete(key);
-        console.log('up ' + key);
+    	players[i].downKeys.delete(key);
+        //console.log('up ' + key);
     });
 
 
     socket.on('desync', function(){
-        var p = players[socket.id];
-        players[socket.id].downKeys = new Set();
+        var p = players[i];
+        players[i].downKeys = new Set();
 
-        players[socket.id].newVel = new Vec2(0, 0);
-        players[socket.id].vel = new Vec2(0, 0);
+        players[i].newVel = new Vec2(0, 0);
+        players[i].vel = new Vec2(0, 0);
         p.pos = p.ghost.pos;
         socket.emit('desync', p.ghost.pos);
     });
 
     socket.on('mouseDown', function(key){
-        var p = players[socket.id];
+        var p = players[i];
         p.downButtons.add(key);
         console.log('down ' + key);
     });
 
     socket.on('mouseUp', function(key){
-        var p = players[socket.id];
+        var p = players[i];
         p.downButtons.delete(key);
         console.log('up ' + key);
     });
+
+    socket.on('mouseMove', function(x, y){
+        //var p = players[socket.id];
+        //p.downButtons.delete(key);
+        var p = players[i];
+        p.mouse = new Vec2(x, y);
+
+        //console.log('x ' + x + ", " + y);
+    });
+
+    
 
     socket.on('msg', function(msg){
         console.log('up ' + msg);
     });
 
     socket.on('pos', function(pos){
-        var p = players[socket.id];
+        var p = players[i];
         p.targetPosition = new Vec2(pos.x, pos.y);
-        //p.pos = new Vec2(pos.x, pos.y)
+
         
-        //console.log('pos ');
+        //console.log(p.targetPosition);
     });
 
 	socket.on('disconnect', function() {
+
+        // users
+        // sockets[socket.id]
+        // players[i]
+
+        //Send all other players of this one
+        for (var j = 0; j < users.length; j++) {
+            var u = users[j];
+            var p = players[u.pid];
+            sockets[u.id].emit('playerDisconnect', j);
+        }
+
 		console.log("User disconnected");
 	});
 });
@@ -130,26 +210,43 @@ function update() {
     deltaTime = currentTime - previousTime;
 
 
-    level.updateServer(deltaTime);
+    level.updateServer(deltaTime, serverNet);
 
 	users.forEach( function(u) {
-		var p = players[u.id];
-        //console.log(p.targetPosition);
+		//var p = players[u.id];
+        var p = players[u.pid];
 
-        p.updateServer(deltaTime, level, p.targetPosition);
-		//p.update(deltaTime, level);
+        //console.log(p.targetPosition);
+        //console.log(p.pos);
+        if (true) {
+
+        }
+
+        p.updateServer(deltaTime, level, p.targetPosition, serverNet);
 	});
 
+    for (var i = 0; i < users.length; i++) {
+        var u = users[i];
+        var p = players[u.pid];
+
+        for (var j = 0; j < users.length; j++) {
+            var v = users[j];
+            var p2 = players[v.pid];
+            var tpos = p2.ghost.pos;
+
+            sockets[u.id].emit('playerPosition', j, {x: tpos.x, y: tpos.y});
+        }
+    }
+
+
 	users.forEach( function(u) {
-		//sockets[u.id].emit('getLatency');
-		var p = players[u.id];
-        
+        var p = players[u.pid];
         var tpos = p.ghost.pos;
         //console.log(tpos);
 
         if (p.moved) {
             p.moved = false;
-            //sockets[u.id].emit('pos', {x: p.ghost.pos.x, y: p.ghost.pos.y, xv: p.vel.x, yv: p.vel.y});
+
             sockets[u.id].emit('pos', {x: tpos.x, y: tpos.y, xv: p.vel.x, yv: p.vel.y});
         }
 		
@@ -158,3 +255,5 @@ function update() {
     previousTime = currentTime;
 
 }
+
+

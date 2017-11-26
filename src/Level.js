@@ -25,12 +25,23 @@ class Level{
 
     this.drawsFrame = 0;
 
-
+    //this.maxBullets = 1024;
     this.bullets = new Array();
+    //this.freeBullets = new Array(maxBullets).fill(true);
 
   }
 
-  updateServer(deltaTime) {
+  updateServer(deltaTime, serverNet) {
+
+    //add
+    /*
+    var free;
+    for (var i = 0; i < this.freeBullets.length; i++) {
+      this.freeBullets[]
+    }
+    this.bullets[i]
+    */
+
 
     for (var i = 0; i < this.bullets.length; i++) {
       this.bullets[i].update(this, deltaTime);
@@ -41,6 +52,7 @@ class Level{
     for (var i = 0; i < this.bullets.length; i++) {
       if (this.bullets[i].remove) {
         this.bullets.splice(i, 1);
+        serverNet.broadcastDestroyBullet(i);
         console.log("bullet destroyed");
 
         i--;

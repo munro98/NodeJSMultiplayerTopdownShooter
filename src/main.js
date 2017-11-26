@@ -34,17 +34,8 @@ for (var j = 0; j < 25; j++) {
   //zombieList.push(new Zombie(new Vec2(100, 1800+j*50)));
 }
 
-for (var i = 0; i < 28; i++) {
-  for (var j = 0; j < 10; j++) {//25
-    //zombieList.push(new Zombie(new Vec2(100+i*50, 1800+j*50)));
-  }
-}
 
-//zombieList.push(new Zombie(new Vec2(200, 200)));
-//zombieList.push(new Zombie(new Vec2(400, 400)));
-
-var playerList = new Array();
-
+var players = new Array();
 var bulletList = new Array();
 
 var guns = new Array();
@@ -152,6 +143,8 @@ var latency = 0;
 
 var timeSinceLastDesync = 0;
 
+var mouseMoved = false;
+
 window.onload = async function() {
 
   socket = io();
@@ -233,8 +226,32 @@ window.onload = async function() {
 
 
   socket.on('playerConnect', function(index, pos){
-    playerList[index] = new Player(new Vec2(800, 1800));;
+    //console.log("connnnnnnnnnnnnn");
+    players[index] = new Player(new Vec2(800, 1800));
 
+  });
+
+  socket.on('playerDisconnect', function(index) {
+    players[index] = undefined;
+    console.log("User disconnected");
+  });
+
+  socket.on('playerPosition', function(index, pos){
+    players[index].pos = new Vec2(pos.x, pos.y);
+  });
+
+
+  socket.on('createBullet', function(x, y, dam, vel){ //
+    
+    var bullet = new Bullet(new Vec2(x, y), dam, vel);
+      bullet.vel = new Vec2(vel.x, vel.y);
+      bulletList.push(bullet);
+    console.log( vel);
+
+  });
+
+  socket.on('destroyBullet', function(index){
+    bulletList.splice(index, 1);
   });
 
 
@@ -314,6 +331,7 @@ function serverTick() {
 
 }
 
+var periodicTimer = new PeriodicTimer(0.6, true, true);
 
 function tick() {
   
@@ -386,6 +404,15 @@ function tick() {
   var mouseWorld = new Vec2(mouseX, mouseY);
   mouseWorld = mouseWorld.sub(cameraPosition);
 
+  //console.log(mouseWorld.x + " "+mouseWorld.y);
+  var mousePlayer = mouseWorld.sub(player.posCenter);
+  console.log(mousePlayer.x + " "+mousePlayer.y);
+  if (mouseMoved) {
+    mouseMoved = false;
+    socket.emit('mouseMove', mousePlayer.x, mousePlayer.y);
+  }
+  
+
   var mouseWorldGrid = new Vec2(Math.floor(mouseWorld.x / 32), Math.floor(mouseWorld.y / 32));
   mouseWorldGrid.x = Math.max(0, Math.min(level.width, mouseWorldGrid.x));
   mouseWorldGrid.y = Math.max(0, Math.min(level.width, mouseWorldGrid.y));
@@ -406,6 +433,9 @@ function tick() {
   ctx.lineTo(mouseX, mouseY);
   ctx.stroke();
   
+  if (this.periodicTimer.trigger()) {
+
+  }
   
 
   if (time2 > 1) {
@@ -434,7 +464,7 @@ function tick() {
   
   ///*
   for (var i = 0; i < bulletList.length; i++) {
-    bulletList[i].update();
+    bulletList[i].update(level, deltaTime);
   }
   //*/
 
@@ -502,13 +532,7 @@ function tick() {
 
   //Remove entites
 
-  //Remove dead bullets
-  for (var i = 0; i < bulletList.length; i++) {
-    if (bulletList[i].remove) {
-      bulletList.splice(i, 1);
-      i--;
-    }
-  }
+  
 
   //Remove dead zombies
   for (var i = 0; i < zombieList.length; i++) {
@@ -542,6 +566,12 @@ function tick() {
   //for (var i = 0; i < zombieList.length; i++) {
   //  zombieList[i].draw(cameraPosition);
   //}
+
+  for (var i = 0; i < players.length; i++) {
+    if (players[i] == undefined)
+      continue;
+    players[i].draw(cameraPosition);
+  }
 
   for (var i = 0; i < bulletList.length; i++) {
     bulletList[i].draw(cameraPosition, cameraBox);
@@ -663,5 +693,8 @@ function onMouseMove(event) {
   mouseX = event.pageX / scaleFitNative;
   mouseY = event.pageY / scaleFitNative;
 
-  //console.log(mouseX);
+  mouseMoved = true;
+  //console.log(mouseX + " "+mouseY);
+  //transform mouse position into world space
+  //make relative to player
 }
