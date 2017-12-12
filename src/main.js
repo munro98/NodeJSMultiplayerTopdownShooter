@@ -58,12 +58,11 @@ var time2 = 0;
 var context = new AudioContext();
 
 var bufferLoader = new BufferLoader(
-    context,
-    [
-      "res/RifleFire.ogg"
-    ],
-    finishedLoading
-    );
+  context, [
+    "res/RifleFire.ogg"
+  ],
+  finishedLoading
+);
 bufferLoader.load();
 
 var gunFire;
@@ -79,10 +78,10 @@ function finishedLoading(bufferList) {
 
 
 function playSound() {
-    var source = context.createBufferSource();
-    source.buffer = gunFire;
-    source.connect(context.destination);
-    source.start(0);
+  var source = context.createBufferSource();
+  source.buffer = gunFire;
+  source.connect(context.destination);
+  source.start(0);
 }
 
 /*
@@ -145,29 +144,29 @@ var timeSinceLastDesync = 0;
 
 var mouseMoved = false;
 
-window.onload = async function() {
+window.onload = async function () {
 
   socket = io();
 
-  socket.on('msg', function(){
+  socket.on('msg', function () {
     console.log("hi");
   });
 
-  socket.on('getLatency', function(){
+  socket.on('getLatency', function () {
     socket.emit('getLatency');
   });
 
-  socket.on('ping', function(){
+  socket.on('ping', function () {
     //console.log('Socket :: Ping sent.');
   });
 
-  socket.on('pong', function(ms){
+  socket.on('pong', function (ms) {
     //console.log(`Socket :: Latency :: ${ms} ms`);
     latency = ms;
   });
 
 
-  socket.on('desync', function(pos){
+  socket.on('desync', function (pos) {
 
     player.pos = new Vec2(pos.x, pos.y);
     player.newVel = new Vec2(0, 0);
@@ -178,14 +177,14 @@ window.onload = async function() {
 
   });
 
-  socket.on('pos', function(pos){
+  socket.on('pos', function (pos) {
 
-    var ticksBehind = Math.min(31, Math.floor(latency / 32))+1;
+    var ticksBehind = Math.min(31, Math.floor(latency / 32)) + 1;
     var i = positionBufferClientIndex - ticksBehind;
     if (i < 0) {
-       i = 32 + (i % 32);
+      i = 32 + (i % 32);
     } else {
-       i = i % 32;
+      i = i % 32;
     }
 
     var clientOldPos = positionBufferClient[i];
@@ -211,12 +210,12 @@ window.onload = async function() {
 
       //player.takeInput = false;
       player.pos = serverOldPos;
-      
+
       player.newVel = new Vec2(0, 0);
       player.vel = new Vec2(0, 0);
 
       positionBufferClient.fill(player.pos);
-      
+
       socket.emit('desync');
     }
 
@@ -225,32 +224,32 @@ window.onload = async function() {
   });
 
 
-  socket.on('playerConnect', function(index, pos){
+  socket.on('playerConnect', function (index, pos) {
     //console.log("connnnnnnnnnnnnn");
     players[index] = new Player(new Vec2(800, 1800));
 
   });
 
-  socket.on('playerDisconnect', function(index) {
+  socket.on('playerDisconnect', function (index) {
     players[index] = undefined;
     console.log("User disconnected");
   });
 
-  socket.on('playerPosition', function(index, pos){
+  socket.on('playerPosition', function (index, pos) {
     players[index].pos = new Vec2(pos.x, pos.y);
   });
 
 
-  socket.on('createBullet', function(x, y, dam, vel){ //
-    
+  socket.on('createBullet', function (x, y, dam, vel) { //
+
     var bullet = new Bullet(new Vec2(x, y), dam, vel);
-      bullet.vel = new Vec2(vel.x, vel.y);
-      bulletList.push(bullet);
-    console.log( vel);
+    bullet.vel = new Vec2(vel.x, vel.y);
+    bulletList.push(bullet);
+    console.log(vel);
 
   });
 
-  socket.on('destroyBullet', function(index){
+  socket.on('destroyBullet', function (index) {
     bulletList.splice(index, 1);
   });
 
@@ -264,27 +263,27 @@ window.onload = async function() {
   c = document.getElementById("Canvas");
   ctx = c.getContext("2d");
 
-  ctx.canvas.width  = window.innerWidth;
+  ctx.canvas.width = window.innerWidth;
   ctx.canvas.height = window.innerHeight;
 
   var client = new XMLHttpRequest();
   client.open('GET', 'res/untitled.json');
-  client.onload = function() {
+  client.onload = function () {
 
     tileImage = new Image();
-    tileImage.onload = function() {
+    tileImage.onload = function () {
 
-    var jsonParse = JSON.parse(client.responseText);
-    console.log(jsonParse.layers[0].data);
+      var jsonParse = JSON.parse(client.responseText);
+      console.log(jsonParse.layers[0].data);
 
-    var data0 = jsonParse.layers[0].data;
-    var data1 = jsonParse.layers[1].data
-    var data2 = jsonParse.layers[2].data
+      var data0 = jsonParse.layers[0].data;
+      var data1 = jsonParse.layers[1].data
+      var data2 = jsonParse.layers[2].data
 
 
-    level = new Level(100, tileImage, data0, data1, data2);
-    setInterval(tick, 16);
-    setInterval(serverTick, 32);
+      level = new Level(100, tileImage, data0, data1, data2);
+      setInterval(tick, 16);
+      setInterval(serverTick, 32);
 
     };
     tileImage.src = "res/tilesheet_complete.png";
@@ -297,27 +296,28 @@ window.onload = async function() {
   c.addEventListener("mousedown", onMouseDown, false);
   c.addEventListener("mousemove", onMouseMove, false);
   c.addEventListener("wheel", onMouseWheel, false);
-  
-  cameraPosition = player.pos.mul(-1).add(new Vec2 (ctx.canvas.width / 2 + 16, ctx.canvas.height / 2 + 16));
+
+  cameraPosition = player.pos.mul(-1).add(new Vec2(ctx.canvas.width / 2 + 16, ctx.canvas.height / 2 + 16));
 
   //ctx.fillRect(10, 10, 100, 100);
   //setInterval(tick, 32);
 };
 
 function levelLoaded() {
-  
+
 }
 
 function doThing1() {
   console.log("doThing1");
 }
+
 function doThing2() {
   console.log("doThing2");
 }
 
 var doThing = doThing1;
 
-var scaleFitNative = 1; 
+var scaleFitNative = 1;
 
 var lastDownKeys = new Set();
 var downKeysFrame = new Set();
@@ -327,14 +327,17 @@ function serverTick() {
   positionBufferClientIndex++;
   positionBufferClientIndex = positionBufferClientIndex % positionBufferSize;
 
-  socket.emit('pos', {x : player.pos.x, y : player.pos.y});
+  socket.emit('pos', {
+    x: player.pos.x,
+    y: player.pos.y
+  });
 
 }
 
 var periodicTimer = new PeriodicTimer(0.6, true, true);
 
 function tick() {
-  
+
   if (player.takeInput == false) {
     keyCodeSet = new Set();
     currentDownKeys = new Set();
@@ -358,14 +361,14 @@ function tick() {
       socket.emit('keyDown', key);
     }
   }
-  
+
 
   if (downKeysFrame.has(87)) {
     console.log("KeyDown " + 81);
   }
-  
 
-  var nativeWidth = 800;  // the resolution the games is designed to look best in
+
+  var nativeWidth = 800; // the resolution the games is designed to look best in
   var nativeHeight = 800;
 
   var deviceWidth = window.innerWidth;
@@ -374,7 +377,7 @@ function tick() {
 
   scaleFitNative = Math.min(window.innerWidth / nativeWidth, window.innerHeight / nativeHeight);
 
-  ctx.canvas.width  = Math.floor(deviceWidth / scaleFitNative);
+  ctx.canvas.width = Math.floor(deviceWidth / scaleFitNative);
   ctx.canvas.height = Math.floor(deviceHeight / scaleFitNative);
 
   var cameraBox = new Vec2(ctx.canvas.width, ctx.canvas.height);
@@ -395,10 +398,10 @@ function tick() {
   gameManager.update(deltaTime);
   //gameManager.log();
 
-  cameraPosition = player.pos.mul(-1).add(new Vec2 (ctx.canvas.width / 2, ctx.canvas.height / 2));
+  cameraPosition = player.pos.mul(-1).add(new Vec2(ctx.canvas.width / 2, ctx.canvas.height / 2));
 
   //console.log(cameraPosition.x);
-  
+
   time2 += deltaTime;
 
   var mouseWorld = new Vec2(mouseX, mouseY);
@@ -406,12 +409,12 @@ function tick() {
 
   //console.log(mouseWorld.x + " "+mouseWorld.y);
   var mousePlayer = mouseWorld.sub(player.posCenter);
-  console.log(mousePlayer.x + " "+mousePlayer.y);
+  console.log(mousePlayer.x + " " + mousePlayer.y);
   if (mouseMoved) {
     mouseMoved = false;
     socket.emit('mouseMove', mousePlayer.x, mousePlayer.y);
   }
-  
+
 
   var mouseWorldGrid = new Vec2(Math.floor(mouseWorld.x / 32), Math.floor(mouseWorld.y / 32));
   mouseWorldGrid.x = Math.max(0, Math.min(level.width, mouseWorldGrid.x));
@@ -424,19 +427,19 @@ function tick() {
 
   //console.log(mouseWorldGrid.x + ", " + mouseWorldGrid.y);
 
-  ctx.strokeStyle="#000000";
+  ctx.strokeStyle = "#000000";
   ctx.beginPath();
   var vec3 = cameraPosition.add(player.pos);
 
-  ctx.moveTo(vec3.x,vec3.y);
+  ctx.moveTo(vec3.x, vec3.y);
 
   ctx.lineTo(mouseX, mouseY);
   ctx.stroke();
-  
+
   if (this.periodicTimer.trigger()) {
 
   }
-  
+
 
   if (time2 > 1) {
     time2 = 0;
@@ -449,7 +452,7 @@ function tick() {
   //if (player.takeInput)
   player.updateClient(deltaTime, level);
   player.update(deltaTime, level);
-    //console.log(player.vel.mag());
+  //console.log(player.vel.mag());
 
   player3.downKeys = keyCodeSet;
 
@@ -457,11 +460,11 @@ function tick() {
   //player3.update(deltaTime, level);
 
 
-  
+
   for (var i = 0; i < zombieList.length; i++) {
     zombieList[i].update(deltaTime, level);
   }
-  
+
   ///*
   for (var i = 0; i < bulletList.length; i++) {
     bulletList[i].update(level, deltaTime);
@@ -478,7 +481,7 @@ function tick() {
   for (var j = 0; j < zombieList.length; j++) {
     quadTree.addEntity(zombieList[j]);
   }
-  
+
   //console.log("els" + quadTree.countElements());
   ///*
 
@@ -491,7 +494,7 @@ function tick() {
         continue;
       if (playersAndZombies[j].isIntersecting(potentialCollisions[i])) {
         playersAndZombies[j].resolveCollision(potentialCollisions[i]);
-        
+
       }
     }
   }
@@ -505,34 +508,34 @@ function tick() {
     var potentialCollisions = quadTree.selectPoints(bulletList[j].pos);
     //console.log(potentialCollisions.length);
     label1:
-    for (var i = 0; i < potentialCollisions.length; i++) {
-      if (potentialCollisions[i] == player)
-        continue;
+      for (var i = 0; i < potentialCollisions.length; i++) {
+        if (potentialCollisions[i] == player)
+          continue;
 
-      var samples = 8;
-      var step = 1 / samples;
+        var samples = 8;
+        var step = 1 / samples;
 
-      for (var k = 0, fraction = 0.0; k < samples; k++, fraction+= step ) {
+        for (var k = 0, fraction = 0.0; k < samples; k++, fraction += step) {
 
-        if (potentialCollisions[i].isPointIntersecting2(    bulletList[j].pos.add(bulletList[j].vel.mul(deltaTime*fraction))     )) {
-          potentialCollisions[i].health -= bulletList[j].damage;
-          bulletList[j].remove = true;
-          break label1;
+          if (potentialCollisions[i].isPointIntersecting2(bulletList[j].pos.add(bulletList[j].vel.mul(deltaTime * fraction)))) {
+            potentialCollisions[i].health -= bulletList[j].damage;
+            bulletList[j].remove = true;
+            break label1;
+          }
+
+
         }
-        
 
       }
 
-    }
 
 
-    
   }
 
 
   //Remove entites
 
-  
+
 
   //Remove dead zombies
   for (var i = 0; i < zombieList.length; i++) {
@@ -542,7 +545,7 @@ function tick() {
     }
   }
 
-  
+
   //rendering
 
   level.draw(cameraPosition, ctx.canvas.width, ctx.canvas.height);
@@ -582,17 +585,17 @@ function tick() {
     vec.y = Math.floor(vec.y);
 
     ctx.save();
-    ctx.translate(vec.x,vec.y);
+    ctx.translate(vec.x, vec.y);
 
-    ctx.strokeRect(0, 0,64,64);
+    ctx.strokeRect(0, 0, 64, 64);
 
-    ctx.translate(+64*0.5, +64*0.5);
+    ctx.translate(+64 * 0.5, +64 * 0.5);
     ctx.restore();
   }
 
-  ctx.strokeStyle="#000000"
+  ctx.strokeStyle = "#000000"
   player2.draw(cameraPosition);
-  ctx.strokeStyle="#00FF00"
+  ctx.strokeStyle = "#00FF00"
   player3.draw(cameraPosition);
   quadTree.drawQuads(cameraPosition);
 
@@ -607,14 +610,14 @@ function tick() {
 
   ctx.font = "30px Verdana";
   //ctx.font = "30px Impact";
-  ctx.textAlign="center";
-  ctx.fillText("Day X "+ zombieList.length + " " + bulletList.length,ctx.canvas.width / 2,50);
+  ctx.textAlign = "center";
+  ctx.fillText("Day X " + zombieList.length + " " + bulletList.length, ctx.canvas.width / 2, 50);
 
-  ctx.textAlign="left";
-  ctx.fillText("Abilities",20, ctx.canvas.height - 20);
+  ctx.textAlign = "left";
+  ctx.fillText("Abilities", 20, ctx.canvas.height - 20);
 
-  ctx.textAlign="right";
-  ctx.fillText("Ammo: " + player.activeWeapon.ammo,ctx.canvas.width - 20, ctx.canvas.height - 20);
+  ctx.textAlign = "right";
+  ctx.fillText("Ammo: " + player.activeWeapon.ammo, ctx.canvas.width - 20, ctx.canvas.height - 20);
 
 
   lastDownKeys = currentDownKeys;
@@ -623,8 +626,8 @@ function tick() {
 
 
 document.documentElement.addEventListener("keydown", onKeyDown, false);
-function onKeyDown(event)
-{
+
+function onKeyDown(event) {
   if (player.takeInput) {
     keyCodeSet.add(event.keyCode);
     onKeyDownCodeSet.add(event.keyCode);
@@ -634,9 +637,9 @@ function onKeyDown(event)
 }
 
 document.documentElement.addEventListener("keyup", onKeyUp, false);
-function onKeyUp(event)
-{
-  
+
+function onKeyUp(event) {
+
   if (player.takeInput) {
     keyCodeSet.delete(event.keyCode);
     socket.emit('keyUp', event.keyCode);
@@ -645,14 +648,12 @@ function onKeyUp(event)
 }
 
 // Take input
-function onMouseWheel(event)
-{
+function onMouseWheel(event) {
   console.log("Wheel");
   player.swapWeapon();
 }
 
-function onMouseDown(event)
-{
+function onMouseDown(event) {
   //console.log("Up");
   var x = event.x;
   var y = event.y;
@@ -665,13 +666,12 @@ function onMouseDown(event)
   mouseDown = true;
   socket.emit('mouseDown', event.which);
   if (event.which == 1) {
-    
+
   }
 
 }
 
-function onMouseUp(event)
-{
+function onMouseUp(event) {
   //console.log("Up");
   var x = event.x;
   var y = event.y;
@@ -685,7 +685,7 @@ function onMouseUp(event)
   socket.emit('mouseUp', event.which);
   //console.log("Up");
   if (event.which == 1) {
-  
+
   }
 }
 

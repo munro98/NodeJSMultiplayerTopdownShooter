@@ -7,15 +7,14 @@ var {Player} = require('./Player.js');
 
 
 class ServerNetworking {
-  constructor (level){
-    this.x = x;
-    this.userCount = 0;
-    this.users = [];
-    this.players = {};
-    this.sockets = {};
+	constructor (level){
+		this.userCount = 0;
+		this.users = [];
+		this.players = {};
+		this.sockets = {};
 
-    this.level = level;
+		this.level = level;
 
-  }
+	}
 }
 
