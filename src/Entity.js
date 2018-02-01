@@ -11,7 +11,6 @@ class Entity {
 		this.pos = pos;
 		this.posCenter = pos.add(new Vec2(size / 2, size / 2));
 		this.vel = new Vec2(0, 0);
-		this.newVel = new Vec2(0, 0);
 
 		this.width = size;
 		this.height = size;
@@ -26,7 +25,7 @@ class Entity {
 	update(deltaTime, level) {
 
 		///*
-		var nextXposition = this.pos.x + (this.vel.x + this.newVel.x) / 2 * deltaTime;
+		var nextXposition = this.pos.x + this.vel.x * deltaTime;
 		var hitX = false;
 
 		for (let x = 0; x <= this.width; x += 32) {
@@ -36,13 +35,12 @@ class Entity {
 		}
 
 		if (!hitX) {
-			this.pos.x += (this.vel.x + this.newVel.x) / 2 * deltaTime;
+			this.pos.x += this.vel.x * deltaTime;
 		} else {
 			this.vel.x = 0;
-			this.newVel.x = 0;
 		}
 
-		var nextYposition = this.pos.y + (this.vel.y + this.newVel.y) / 2 * deltaTime;
+		var nextYposition = this.pos.y + this.vel.y * deltaTime;
 		var hitY = false;
 
 		for (let x = 0; x <= this.width; x += 32) {
@@ -51,24 +49,23 @@ class Entity {
 			}
 		}
 		if (!hitY) {
-			this.pos.y += (this.vel.y + this.newVel.y) / 2 * deltaTime;
+			this.pos.y += this.vel.y * deltaTime;
 		} else {
 			this.vel.y = 0;
-			this.newVel.y = 0;
 		}
 		//*/
 
-		//this.pos.x += (this.vel.x + this.newVel.x) / 2 * deltaTime;
-		//this.pos.y += (this.vel.y + this.newVel.y) / 2 * deltaTime;
 		this.posCenter = this.pos.add(new Vec2(this.width / 2, this.height / 2));
 
-
-		this.vel = this.newVel;
 		this.lifeTime += deltaTime;
 
 		if (this.health < 0) {
 			this.remove = true;
 		}
+	}
+
+	getCenter() {
+		return this.pos.add(new Vec2(this.width * 0.5, this.width * 0.5));
 	}
 
 	isIntersecting(other) {

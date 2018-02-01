@@ -61,6 +61,7 @@ class Level {
 			this.quadTree.addEntity(p);
 		}
 
+		return;
 
 		//Bullets hitting players
 		for (var j = 0; j < this.bullets.length; j++) {

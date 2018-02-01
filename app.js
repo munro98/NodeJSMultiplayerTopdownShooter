@@ -167,8 +167,8 @@ io.on('connection', function (socket) {
 
 		level.players[i].newVel = new Vec2(0, 0);
 		level.players[i].vel = new Vec2(0, 0);
-		p.pos = p.ghost.pos;
-		socket.emit('desync', p.ghost.pos);
+		//p.pos = p.ghost.pos;
+		socket.emit('desync', p.pos);
 	});
 
 	socket.on('mouseDown', function (key) {
@@ -198,10 +198,10 @@ io.on('connection', function (socket) {
 
 	socket.on('pos', function (pos) {
 		var p = level.players[i];
-		p.targetPosition = new Vec2(pos.x, pos.y);
+		p.targetPos = new Vec2(pos.x, pos.y);
 
 
-		//console.log(p.targetPosition);
+		//console.log(p.targetPos);
 	});
 
 	socket.on('disconnect', function () {
@@ -231,6 +231,7 @@ http.listen(3000, function () {
 
 // Game code
 
+
 var date = new Date();
 var currentTime = date.getTime() / 1000.0;
 var previousTime = date.getTime() / 1000.0;
@@ -242,6 +243,7 @@ function update() {
 	currentTime = date.getTime() / 1000.0;
 	deltaTime = currentTime - previousTime;
 
+	// Server simulation
 
 	level.updateServer(deltaTime, serverNet);
 
@@ -255,20 +257,26 @@ function update() {
 		let u = users[i];
 		let p = level.players[u.pid];
 
+		if (i == 0) {
+			//console.log(p.targetPosition.x);
+		}
+
 		//console.log(p.targetPosition);
 		//console.log(p.pos);
 
-		p.updateServer(deltaTime, level, p.targetPosition, serverNet);
+		p.updateServer(deltaTime, level, serverNet);
 	}
 
 	level.updateCollision(deltaTime, serverNet);
 
 	
-
+	//console.log()
 
 
 	level.removeDead(serverNet);
 
+	// Broadcast new state
+	///*
 	for (let i = 0; i < users.length; i++) {
 		if (users[i] == undefined) {
 			continue;
@@ -283,7 +291,7 @@ function update() {
 
 			let v = users[j];
 			let p2 = level.players[v.pid];
-			let tpos = p2.ghost.pos;
+			let tpos = p2.pos;
 
 			sockets[u.id].emit('playerPosition', j, {
 				x: tpos.x,
@@ -291,6 +299,7 @@ function update() {
 			});
 		}
 	}
+	//*/
 
 
 	for (let i = 0; i < users.length; i++) {
@@ -299,11 +308,11 @@ function update() {
 		}
 		let u = users[i];
 		let p = level.players[u.pid];
-		let tpos = p.ghost.pos;
-		//console.log(tpos);
+		let tpos = p.pos;
+		//console.log(tpos.x);
 
 		if (p.moved) {
-			p.moved = false;
+			//p.moved = false;
 
 			sockets[u.id].emit('pos', {
 				x: tpos.x,

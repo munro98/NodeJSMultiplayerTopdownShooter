@@ -201,7 +201,7 @@ window.onload = async function () {
 
     //console.log("desync " + (currentTime - timeSinceLastDesync));
     //console.log("desync " + deltaPos.mag());
-
+    
     if (deltaPos.mag() > 40) { //  && (currentTime - timeSinceLastDesync) > 0.5
       date = new Date();
       timeSinceLastDesync = currentTime;
