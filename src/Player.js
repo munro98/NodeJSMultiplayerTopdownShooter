@@ -39,10 +39,7 @@ class Player extends Actor {
 		this.takeInput = true;
 
 		this.targetPos = pos.copy();
-		//this.ghost = new PlayerGhost(pos.copy());
 		this.mouse = new Vec2(0, 0);
-
-
 	}
 
 	updateClient(deltaTime, level) {
@@ -73,43 +70,32 @@ class Player extends Actor {
 			//console.log("Frame");
 		}
 
-		//this.ghost.update(deltaTime, level,targetPos);
-
-		//let prevVel = this.vel;
-		//this.vel = this.vel.add(this.targetPos.sub(this.pos).normalized().mul( deltaTime * this.accel));
-
-		//this.vel = (this.targetPos.sub(this.pos).normalized().mul( deltaTime * this.accel));
-		//let oldVel = this.vel;
-		//this.vel = this.targetPos.sub(this.pos).normalized().mul(this.accel);
-		//this.vel = oldVel.sub(this.vel);
-
-		//this.pos = this.targetPos;
-		
-		//console.log(this.targetPos);
-		//console.log(this.pos.x);
-
-		//this.vel += (this.targetPos - this.pos).normalized()
-
-		/*
-		if (this.downKeys.has(87)) {
-			this.moved = true;
-		}
-		if (this.downKeys.has(83)) {
-			this.moved = true;
-		}
-
-		if (this.downKeys.has(65)) {
-			this.moved = true;
-		}
-		if (this.downKeys.has(68)) {
-			this.moved = true;
-		}
-		*/
-
-
-		//TODO add collision check code here!
 		let deltaPos2 = this.targetPos.sub(this.pos).normalized().mul(deltaTime * this.maxPosCorrection);
-		this.pos = this.pos.add(deltaPos2);
+
+		var nextXposition = this.pos.x + deltaPos2.x * deltaTime;
+		var hitX = false;
+
+		for (let x = 0; x <= this.width; x += 32) {
+			for (let y = 0; y <= this.width; y += 32) {
+				hitX |= level.hit(new Vec2(nextXposition + x, this.pos.y + y));
+			}
+		}
+
+		if (!hitX) {
+			this.pos.x += deltaPos2.x * deltaTime;
+		}
+
+		var nextYposition = this.pos.y + deltaPos2.y * deltaTime;
+		var hitY = false;
+
+		for (let x = 0; x <= this.width; x += 32) {
+			for (let y = 0; y <= this.width; y += 32) {
+				hitY |= level.hit(new Vec2(this.pos.x + x, nextYposition + y));
+			}
+		}
+		if (!hitY) {
+			this.pos.y += deltaPos2.y * deltaTime;
+		}
 
 		///*
 		var inputVec3 = new Vec2(0, 0);
@@ -171,7 +157,6 @@ class Player extends Actor {
 				*/
 		this.timeSinceLastFire += deltaTime;
 		if (this.timeSinceLastFire > this.activeWeapon.timeBetweenShots && this.downButtons.has(1) && this.activeWeapon.ammo > 0) {
-
 
 			this.timeSinceLastFire = 0;
 			//playSound();

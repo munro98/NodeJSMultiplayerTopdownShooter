@@ -1,4 +1,6 @@
 
+
+/*
 'use strict';
 
 var Vec2 = require('./Vec2.js').Vec2;
@@ -18,3 +20,4 @@ class ServerNetworking {
 	}
 }
 
+*/

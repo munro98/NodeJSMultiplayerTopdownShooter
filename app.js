@@ -23,49 +23,51 @@ var {
 } = require('./src/QuadTree.js');
 
 
-var userCount = 0;
-var users = new Array(16);
 var maxplayers = 16;
-var sockets = {};
+var allPlayers = [];
 
 var level;
 
 class ServerNetworking {
 	constructor() {
 
-
 	}
+
+	//TODO clean up
 
 	broadcastCreateBullet(b) {
 		//console.log("bullet created");
-		for (var i = 0; i < users.length; i++) {
-			if (users[i] == undefined) {
-				continue;
-			}
-			var u = users[i];
-			var p = level.players[u.pid];
+		for (var i = 0; i < allPlayers.length; i++) {
+			let sP = allPlayers[i];
 
-
-			sockets[u.id].emit('createBullet', b.pos.x, b.pos.y, b.damage, b.vel); //
+			sP.socket.emit('createBullet', b.pos.x, b.pos.y, b.damage, b.vel); //
 		}
 
 	}
 
 	broadcastDestroyBullet(index) {
-		//sockets[u.id].emit('destroyBullet', index); //
-		for (var i = 0; i < users.length; i++) {
-			if (users[i] == undefined) {
-				continue;
-			}
-			var u = users[i];
-			var p = level.players[u.pid];
+		for (var i = 0; i < allPlayers.length; i++) {
+			let sP = allPlayers[i];
+			sP.socket.emit('destroyBullet', index);
 
-			sockets[u.id].emit('destroyBullet', index);
+		}
+	}
 
+	broadcastCreateZombie(z) {
+		for (var i = 0; i < allPlayers.length; i++) {
+			let sP = allPlayers[i];
+			sP.socket.emit('createZombie', z.pos.x, z.pos.y); //
 		}
 
 	}
 
+	broadcastDestroyZombie(index) {
+		for (var i = 0; i < allPlayers.length; i++) {
+			let sP = allPlayers[i];
+			sP.socket.emit('destroyZombie', index);
+
+		}
+	}
 
 }
 
@@ -86,7 +88,6 @@ fs.readFile('res/untitled.json', 'utf8', function (err, data) {
 	//level = new Level(100, null, data);
 	console.log("Level created ");
 	level = new Level(100, null, data0, data1, data2);
-	console.log("Level players " + level.players);
 
 	setInterval(update, 32);
 });
@@ -99,92 +100,82 @@ app.get('/', function (req, res) {
 });
 
 io.on('connection', function (socket) {
-	console.log("User connected " + socket.id);
+	console.log("Player connected " + socket.id);
 
-	console.log("User connected " + level.players);
+	let curPlayer = new Player(new Vec2(800, 1800));
 
-	var i = 0;
-	for (; i < maxplayers; i++) {
-		if (level.players[i] == undefined) {
-			break;
-		}
-	}
-
-	level.players[i] = new Player(new Vec2(800, 1800));
-
-	//socket.emit('msg');
-
-	var currentPlayer = {
+	var serverPlayer = {
 		id: socket.id,
-		pid: i
+		socket: socket,
+		player: curPlayer
 	};
 
-	users[i] = currentPlayer;
-	sockets[socket.id] = socket;
-	level.players[i].targetPosition = new Vec2(800, 1800);
+	
 
-	//Send all other level.players of this one
-	for (var j = 0; j < users.length; j++) {
-		socket.emit('playerConnect', j, {
+	///*
+	//Send current connected players about this one
+	for (let j = 0; j < allPlayers.length; j++) {
+		//console.log('con' + serverPlayer.id);
+		allPlayers[j].socket.emit('playerConnect', socket.id, {
 			x: 0,
 			y: 0
 		});
 	}
 
-
-
-	for (var j = 0; j < users.length; j++) {
-		if (users[j] == undefined) {
-			continue;
-		}
-		var u = users[j];
-		var p = level.players[u.pid];
-
-		sockets[u.id].emit('playerConnect', j, {
-			x: 0,
-			y: 0
+	///*
+	//Send currently connecting player about other players
+	for (let j = 0; j < allPlayers.length; j++) {
+		let sP = allPlayers[j];
+		socket.emit('playerConnect', sP.id, {
+			x: sP.player.pos.x,
+			y: sP.player.pos.y
 		});
 	}
+	//*/
+	for (let j = 0; j < level.zombies.length; j++) {
+		let z = level.zombies[j];
+		socket.emit('createZombie', z.pos.x, z.pos.y);
+	}
 
+	allPlayers.push(serverPlayer);
 
-
-
+	//console.log(serverPlayer.id);
 
 	socket.on('keyDown', function (key) {
-		level.players[i].downKeys.add(key);
+		curPlayer.downKeys.add(key);
+		//curPlayer
 		//console.log('down ' + key);
 	});
 
 	socket.on('keyUp', function (key) {
-		level.players[i].downKeys.delete(key);
+		curPlayer.downKeys.delete(key);
 		//console.log('up ' + key);
 	});
 
 
 	socket.on('desync', function () {
-		var p = level.players[i];
-		level.players[i].downKeys = new Set();
+		var p = curPlayer;
+		curPlayer.downKeys = new Set();
 
-		level.players[i].newVel = new Vec2(0, 0);
-		level.players[i].vel = new Vec2(0, 0);
-		//p.pos = p.ghost.pos;
+		curPlayer.newVel = new Vec2(0, 0);
+		curPlayer.vel = new Vec2(0, 0);
 		socket.emit('desync', p.pos);
 	});
 
 	socket.on('mouseDown', function (key) {
-		var p = level.players[i];
+		var p = curPlayer;
 		p.downButtons.add(key);
-		console.log('down ' + key);
+		//console.log('down ' + key);
 	});
 
 	socket.on('mouseUp', function (key) {
-		var p = level.players[i];
+		var p = curPlayer;
 		p.downButtons.delete(key);
-		console.log('up ' + key);
+		//console.log('up ' + key);
 	});
 
 	socket.on('mouseMove', function (x, y) {
-		var p = level.players[i];
+		var p = curPlayer;
 		p.mouse = new Vec2(x, y);
 
 		//console.log('x ' + x + ", " + y);
@@ -197,31 +188,24 @@ io.on('connection', function (socket) {
 	});
 
 	socket.on('pos', function (pos) {
-		var p = level.players[i];
+		var p = curPlayer;
 		p.targetPos = new Vec2(pos.x, pos.y);
-
 
 		//console.log(p.targetPos);
 	});
 
 	socket.on('disconnect', function () {
 
-		users[i] = undefined;
-		level.players[i] = undefined;
-		sockets[socket.id] = undefined;
-
+		var i = allPlayers.indexOf(serverPlayer);
+		allPlayers.splice(i, 1);
 
 		//Send all other level.players of this one disconnecting
-		for (let j = 0; j < users.length; j++) {
-			if (users[j] == undefined) {
-				continue;
-			}
-			let u = users[j];
-			let p = level.players[u.pid];
-			sockets[u.id].emit('playerDisconnect', i);
+		for (let j = 0; j < allPlayers.length; j++) {
+			allPlayers[j].socket.emit('playerDisconnect', serverPlayer.id);
+			
 		}
 
-		console.log("User disconnected");
+		console.log("Player disconnected " + socket.id + " " + allPlayers.length + " left");
 	});
 });
 
@@ -250,16 +234,8 @@ function update() {
 	//Build Quadtree
 	var quadTree = new QuadTree(0, 0, 3200, 0);
 
-	for (let i = 0; i < users.length; i++) {
-		if (users[i] == undefined) {
-			continue;
-		}
-		let u = users[i];
-		let p = level.players[u.pid];
-
-		if (i == 0) {
-			//console.log(p.targetPosition.x);
-		}
+	for (let i = 0; i < allPlayers.length; i++) {
+		let p = allPlayers[i].player;
 
 		//console.log(p.targetPosition);
 		//console.log(p.pos);
@@ -269,54 +245,51 @@ function update() {
 
 	level.updateCollision(deltaTime, serverNet);
 
-	
-	//console.log()
-
 
 	level.removeDead(serverNet);
 
-	// Broadcast new state
+	// Broadcast new game state state
 	///*
-	for (let i = 0; i < users.length; i++) {
-		if (users[i] == undefined) {
-			continue;
-		}
-		let u = users[i];
-		let p = level.players[u.pid];
 
-		for (let j = 0; j < users.length; j++) {
-			if (users[j] == undefined) {
+	//TODO clean up this code	
+	for (let i = 0; i < allPlayers.length; i++) {
+		// Select a player
+		let sP = allPlayers[i];
+
+		// Then send position of other players
+		for (let j = 0; j < allPlayers.length; j++) {
+			if (i == j) {
 				continue;
 			}
+			let sP2 = allPlayers[j];
 
-			let v = users[j];
-			let p2 = level.players[v.pid];
-			let tpos = p2.pos;
-
-			sockets[u.id].emit('playerPosition', j, {
-				x: tpos.x,
-				y: tpos.y
+			sP.socket.emit('playerPosition', sP2.id, {
+				x: sP2.player.pos.x,
+				y: sP2.player.pos.y
 			});
 		}
 	}
 	//*/
 
+	for (let i = 0; i < allPlayers.length; i++) {
+		let sP = allPlayers[i];
 
-	for (let i = 0; i < users.length; i++) {
-		if (users[i] == undefined) {
-			continue;
+		for (let j = 0; j < level.zombies.length; j++) {
+			let z = level.zombies[j];
+			sP.socket.emit('zombiePosition', j, z.pos.x, z.pos.y);
 		}
-		let u = users[i];
-		let p = level.players[u.pid];
-		let tpos = p.pos;
-		//console.log(tpos.x);
+	}
 
+
+	for (let i = 0; i < allPlayers.length; i++) {
+		let curP = allPlayers[i];
+		let p = allPlayers[i].player;
 		if (p.moved) {
 			//p.moved = false;
 
-			sockets[u.id].emit('pos', {
-				x: tpos.x,
-				y: tpos.y,
+			curP.socket.emit('pos', {
+				x: p.pos.x,
+				y: p.pos.y,
 				xv: p.vel.x,
 				yv: p.vel.y
 			});

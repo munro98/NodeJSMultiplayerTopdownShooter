@@ -1,3 +1,8 @@
+if (typeof exports !== "undefined") {
+	global.Actor = require("./Actor.js").Actor;
+	global.PeriodicTimer = require("./Time.js").PeriodicTimer;
+}
+
 class Zombie extends Actor {
 	constructor(pos) {
 		super(64, pos)
@@ -10,18 +15,24 @@ class Zombie extends Actor {
 
 		this.accel = 800;
 		this.maxVel = 100;
-		this.texture = new Texture("res/player.png");
+		this.texture = "res/player.png";
 
 		this.periodicTimer = new PeriodicTimer(0.6, true, true);
 
 
 	}
 
-	update() {
+	update(level, deltaTime) {
 
-		if (this.periodicTimer.trigger()) {
+		if (this.periodicTimer.trigger(deltaTime)) {
 
-			var mouseWorldGrid = new Vec2(Math.floor(player.posCenter.x / 32), Math.floor(player.posCenter.y / 32));
+			if (true) {
+
+			}
+
+			//var mouseWorldGrid = new Vec2(Math.floor(player.posCenter.x / 32), Math.floor(player.posCenter.y / 32));
+
+			var mouseWorldGrid = new Vec2(10, 10);
 			mouseWorldGrid.x = Math.max(0, Math.min(level.width, mouseWorldGrid.x));
 			mouseWorldGrid.y = Math.max(0, Math.min(level.width, mouseWorldGrid.y));
 
@@ -29,7 +40,7 @@ class Zombie extends Actor {
 			zombieGrid.x = Math.max(0, Math.min(level.width, zombieGrid.x));
 			zombieGrid.y = Math.max(0, Math.min(level.width, zombieGrid.y));
 
-			this.path = level.aStarSearch(zombieGrid.x, zombieGrid.y, mouseWorldGrid.x, mouseWorldGrid.y, cameraPosition);
+			this.path = level.aStarSearch(zombieGrid.x, zombieGrid.y, mouseWorldGrid.x, mouseWorldGrid.y);
 			this.currentIndexOnPath = 0;
 		}
 
@@ -45,15 +56,15 @@ class Zombie extends Actor {
 
 
 		deltaPos = deltaPos.normalized().mul(deltaTime * this.accel);
-		this.newVel = this.newVel.add(deltaPos);
+		this.vel = this.vel.add(deltaPos);
 
-		if (this.newVel.mag() > this.maxVel) {
-			this.newVel = this.newVel.normalized().mul(this.maxVel);
+		if (this.vel.mag() > this.maxVel) {
+			this.vel = this.vel.normalized().mul(this.maxVel);
 		}
 
-		if (deltaPos.mag() == 0) {
-			this.newVel = this.newVel.mul(25 * deltaTime);
-		}
+		//if (deltaPos.mag() == 0) {
+		//	this.vel = this.vel.mul(25 * deltaTime);
+		//}
 
 		this.rotation = Math.atan(deltaPos.y / deltaPos.x) * 180 / Math.PI;
 		if (deltaPos.x >= 0.0) {
@@ -62,7 +73,7 @@ class Zombie extends Actor {
 
 		this.rotation += 90;
 
-		super.update();
+		super.update(deltaTime, level);
 	}
 
 	hit(v) {
@@ -75,3 +86,6 @@ class Zombie extends Actor {
 		return true;
 	}
 }
+
+if (typeof exports !== "undefined")
+	exports.Zombie = Zombie;

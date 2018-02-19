@@ -25,7 +25,7 @@ var player3 = new Player(new Vec2(800, 1800));
 var zombie = new Zombie(new Vec2(600, 100));
 
 
-var zombieList = new Array();
+
 //zombieList.push(zombie);
 //zombieList.push(new Zombie(new Vec2(600, 100)));
 //zombieList.push(new Zombie(new Vec2(600, 200)));
@@ -35,8 +35,9 @@ for (var j = 0; j < 25; j++) {
 }
 
 
-var players = new Array();
+var players = new Map();
 var bulletList = new Array();
+var zombieList = new Array();
 
 var guns = new Array();
 guns.push(new Rifle(new Vec2(500, 100)));
@@ -73,7 +74,7 @@ function finishedLoading(bufferList) {
   source1.buffer = bufferList[0];
 
   source1.connect(context.destination);
-  source1.start(0);
+  //source1.start(0);
 }
 
 
@@ -85,6 +86,27 @@ function playSound() {
 }
 
 /*
+networked player direction
+lerped positions
+networked collisions
+make more art
+animate legs
+melee
+lag compensation on bullets sample from fire point to current position(fire point + vel * Math.max(ping, MaxPing))
+player/player collision
+player/bullet collision
+
+pickup guns
+
+
+deathmatch
+reflective bullets
+multiply reflective bullets
+instagib
+
+insane knockback guns
+
+
 remove tileImage from level
 remove texture from entity
 
@@ -93,7 +115,6 @@ pulse wave gun
 using sniper gives extended view range
 add dash mechanic
 fix sniper spread
-A* fix zombies merging
 place zombie spawners
 gui show gamestate
 scoreboard
@@ -104,8 +125,7 @@ team dethmatch
 bullet sponge gamemode (players gradually get more powerful guns)
 don't draw offscreen entities(use quadtree) / bullets
 
-make more art
-animate legs
+
 
 
 design abilities
@@ -118,8 +138,6 @@ and concurrency in swapWeapons
 var c;
 var ctx;
 
-var bullet;
-
 var deltaTime = 0.0;
 var previousTime = 0.0;
 
@@ -131,18 +149,14 @@ var gameManager;
 
 var width = 20;
 
-var grid;
-
-
 var socket;
-
 var sendTime;
-
 var latency = 0;
-
 var timeSinceLastDesync = 0;
 
 var mouseMoved = false;
+
+//players.set( 5, new Player(new Vec2(800, 1800)));
 
 window.onload = async function () {
 
@@ -173,7 +187,6 @@ window.onload = async function () {
     player.vel = new Vec2(0, 0);
 
     positionBufferClient.fill(player.pos);
-    //player.takeInput = true;
 
   });
 
@@ -201,14 +214,13 @@ window.onload = async function () {
 
     //console.log("desync " + (currentTime - timeSinceLastDesync));
     //console.log("desync " + deltaPos.mag());
-    
+
     if (deltaPos.mag() > 40) { //  && (currentTime - timeSinceLastDesync) > 0.5
       date = new Date();
       timeSinceLastDesync = currentTime;
       //console.log("desync " + ticksBehind + " " + i); //deltaPos.mag()
       console.log("desync " + deltaPos.mag() + " " + i); //deltaPos.mag()
 
-      //player.takeInput = false;
       player.pos = serverOldPos;
 
       player.newVel = new Vec2(0, 0);
@@ -219,39 +231,63 @@ window.onload = async function () {
       socket.emit('desync');
     }
 
-    player3.pos = new Vec2(pos.x, pos.y);
+    //player3.pos = new Vec2(pos.x, pos.y);
 
   });
 
 
   socket.on('playerConnect', function (index, pos) {
-    //console.log("connnnnnnnnnnnnn");
-    players[index] = new Player(new Vec2(800, 1800));
+    console.log("Con " + index);
+    //players[index] = new Player(new Vec2(800, 1800));
+    players.set( index, new Player(new Vec2(800, 1800)));
 
   });
 
   socket.on('playerDisconnect', function (index) {
-    players[index] = undefined;
-    console.log("User disconnected");
+    players.delete(index);
+    //players.splice(index, 1);
+
+    console.log("Disc " + index);
   });
 
   socket.on('playerPosition', function (index, pos) {
-    players[index].pos = new Vec2(pos.x, pos.y);
+    //console.log("Pos " + index + pos.x);
+    //players[index].pos = new Vec2(pos.x, pos.y);
+
+    //console.log("Pos " + index);
+    players.get(index).pos = new Vec2(pos.x, pos.y);
   });
 
 
   socket.on('createBullet', function (x, y, dam, vel) { //
 
-    var bullet = new Bullet(new Vec2(x, y), dam, vel);
+    let bullet = new Bullet(new Vec2(x, y), dam, null);
     bullet.vel = new Vec2(vel.x, vel.y);
     bulletList.push(bullet);
-    console.log(vel);
+    //console.log(vel);
 
   });
 
   socket.on('destroyBullet', function (index) {
     bulletList.splice(index, 1);
   });
+
+
+  socket.on('createZombie', function (x, y) { //
+
+    let z = new Zombie(new Vec2(x, y));
+    zombieList.push(z);
+
+  });
+
+  socket.on('destroyZombie', function (index) {
+    zombieList.splice(index, 1);
+  });
+
+  socket.on('zombiePosition', function (index, x, y) {
+    zombieList[index].pos = new Vec2(x, y);
+  });
+  
 
 
   date = new Date();
@@ -296,6 +332,10 @@ window.onload = async function () {
   c.addEventListener("mousedown", onMouseDown, false);
   c.addEventListener("mousemove", onMouseMove, false);
   c.addEventListener("wheel", onMouseWheel, false);
+
+  document.documentElement.addEventListener("keydown", onKeyDown, false);
+  document.documentElement.addEventListener("keyup", onKeyUp, false);
+
 
   cameraPosition = player.pos.mul(-1).add(new Vec2(ctx.canvas.width / 2 + 16, ctx.canvas.height / 2 + 16));
 
@@ -409,7 +449,7 @@ function tick() {
 
   //console.log(mouseWorld.x + " "+mouseWorld.y);
   var mousePlayer = mouseWorld.sub(player.posCenter);
-  console.log(mousePlayer.x + " " + mousePlayer.y);
+  //console.log(mousePlayer.x + " " + mousePlayer.y);
   if (mouseMoved) {
     mouseMoved = false;
     socket.emit('mouseMove', mousePlayer.x, mousePlayer.y);
@@ -461,9 +501,9 @@ function tick() {
 
 
 
-  for (var i = 0; i < zombieList.length; i++) {
-    zombieList[i].update(deltaTime, level);
-  }
+  //for (var i = 0; i < zombieList.length; i++) {
+  //  zombieList[i].update(deltaTime, level);
+  //}
 
   ///*
   for (var i = 0; i < bulletList.length; i++) {
@@ -471,6 +511,7 @@ function tick() {
   }
   //*/
 
+  /*
 
   var playersAndZombies = zombieList.concat(player);
 
@@ -481,9 +522,6 @@ function tick() {
   for (var j = 0; j < zombieList.length; j++) {
     quadTree.addEntity(zombieList[j]);
   }
-
-  //console.log("els" + quadTree.countElements());
-  ///*
 
   // Don't let players and zombies get inside each other
   for (var j = 0; j < playersAndZombies.length; j++) {
@@ -498,7 +536,11 @@ function tick() {
       }
     }
   }
-  //*/
+
+  */
+
+
+  /*
   //Bullets hitting zombies
   for (var j = 0; j < bulletList.length; j++) {
     //console.log(bulletList[j]);
@@ -531,6 +573,7 @@ function tick() {
 
 
   }
+  */
 
 
   //Remove entites
@@ -538,13 +581,14 @@ function tick() {
 
 
   //Remove dead zombies
+  /*
   for (var i = 0; i < zombieList.length; i++) {
     if (zombieList[i].remove) {
       zombieList.splice(i, 1);
       i--;
     }
   }
-
+  */
 
   //rendering
 
@@ -561,24 +605,33 @@ function tick() {
     height: cameraBox.y,
   }
 
+  /*
   var potentialCollisions = quadTree.selectBoxes(cameraPosAndBox);
   for (var i = 0; i < potentialCollisions.length; i++) {
     potentialCollisions[i].draw(cameraPosition);
   }
+  */
 
-  //for (var i = 0; i < zombieList.length; i++) {
-  //  zombieList[i].draw(cameraPosition);
+  for (var i = 0; i < zombieList.length; i++) {
+    zombieList[i].draw(cameraPosition);
+  }
+
+  //for (var i = 0; i < players.length; i++) {
+    //players[i].draw(cameraPosition);
   //}
 
-  for (var i = 0; i < players.length; i++) {
-    if (players[i] == undefined)
-      continue;
-    players[i].draw(cameraPosition);
+  for (var key of players.keys()) {
+    //console.log(key);
+    players.get(key).draw(cameraPosition);
   }
 
   for (var i = 0; i < bulletList.length; i++) {
-    bulletList[i].draw(cameraPosition, cameraBox);
+    bulletList[i].draw(ctx, cameraPosition, cameraBox);
   }
+
+  player.draw(cameraPosition);
+
+  /*
   for (var i = 0; i < 32; i++) {
     var vec = cameraPosition.add(positionBufferClient[i]);
     vec.x = Math.floor(vec.x);
@@ -592,12 +645,13 @@ function tick() {
     ctx.translate(+64 * 0.5, +64 * 0.5);
     ctx.restore();
   }
+  */
 
-  ctx.strokeStyle = "#000000"
-  player2.draw(cameraPosition);
-  ctx.strokeStyle = "#00FF00"
-  player3.draw(cameraPosition);
-  quadTree.drawQuads(cameraPosition);
+  //ctx.strokeStyle = "#000000"
+  //player2.draw(cameraPosition);
+  //ctx.strokeStyle = "#00FF00"
+  //player3.draw(cameraPosition);
+  //quadTree.drawQuads(cameraPosition);
 
   //ctx.strokeStyle="#0000FF"
   //player.ghost.draw(cameraPosition);
@@ -611,7 +665,7 @@ function tick() {
   ctx.font = "30px Verdana";
   //ctx.font = "30px Impact";
   ctx.textAlign = "center";
-  ctx.fillText("Day X " + zombieList.length + " " + bulletList.length, ctx.canvas.width / 2, 50);
+  ctx.fillText("Day X " + zombieList.length + " " + bulletList.length + " " + players.size, ctx.canvas.width / 2, 50);
 
   ctx.textAlign = "left";
   ctx.fillText("Abilities", 20, ctx.canvas.height - 20);
@@ -625,7 +679,7 @@ function tick() {
 
 
 
-document.documentElement.addEventListener("keydown", onKeyDown, false);
+
 
 function onKeyDown(event) {
   if (player.takeInput) {
@@ -636,7 +690,7 @@ function onKeyDown(event) {
 
 }
 
-document.documentElement.addEventListener("keyup", onKeyUp, false);
+
 
 function onKeyUp(event) {
 

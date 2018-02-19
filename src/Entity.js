@@ -22,6 +22,7 @@ class Entity {
 		this.remove = false;
 	}
 
+	// TODO reorder
 	update(deltaTime, level) {
 
 		///*

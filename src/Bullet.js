@@ -41,9 +41,9 @@ class Bullet {
 	}
 
 	testHitLevel(level, deltaTime) {
-		var samples = 4;
-		var step = 1 / samples;
-		for (var i = 0, fraction = 0.0; i < samples; i++, fraction += step) {
+		let samples = 4;
+		let step = 1 / samples;
+		for (let i = 0, fraction = 0.0; i < samples; i++, fraction += step) {
 			if (level.hit(this.pos.add(this.vel.mul(deltaTime * fraction)))) {
 				return true;
 			}
@@ -52,8 +52,12 @@ class Bullet {
 		return false;
 	}
 
-	draw(view, cameraBound) {
-		var vec3 = view.add(this.pos);
+	draw(ctx, view, cameraBound) {
+
+		if (this.remove)
+			return;
+		
+		let vec3 = view.add(this.pos);
 		if (vec3.x < 0 || vec3.y < 0)
 			return;
 		if (vec3.x > cameraBound.x || vec3.y > cameraBound.y)

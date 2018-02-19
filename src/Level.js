@@ -3,6 +3,8 @@
 
 if (typeof exports !== "undefined") {
 	global.QuadTree = require('./QuadTree.js').QuadTree;
+	global.Actor = require('./Actor.js').Actor;
+	global.Zombie = require('./Zombie.js').Zombie;
 }
 
 class Level {
@@ -14,8 +16,6 @@ class Level {
 		this.tileSize = 32;
 		this.chunkCount = Math.ceil(this.width / this.chunkSize);
 		this.chunkMap = new Array(this.chunkCount * this.chunkCount);
-
-		//this.socket = socket;
 
 		this.startX = 1;
 		this.startY = 1;
@@ -32,6 +32,12 @@ class Level {
 
 		this.bullets = new Array();
 		this.players = new Array();
+		this.zombies = new Array();
+
+		this.first = false;
+
+		//let z = new Zombie(new Vec2(600, 100));
+		//console.log(Zombie);
 
 		//Build Quadtree
 		this.quadTree = new QuadTree(0, 0, 3200, 0);
@@ -39,9 +45,25 @@ class Level {
 	}
 
 	updateServer(deltaTime, serverNet) {
-		for (var i = 0; i < this.bullets.length; i++) {
+		if (this.first == false) {
+			this.first = true;
+			let z = new Zombie(new Vec2(800, 1800));
+			this.zombies.push(z);
+			serverNet.broadcastCreateZombie(z);
+
+		}
+
+
+		for (let i = 0; i < this.bullets.length; i++) {
 			this.bullets[i].update(this, deltaTime);
 		}
+
+		for (let i = 0; i < this.zombies.length; i++) {
+			this.zombies[i].update(this, deltaTime);
+		}
+
+		
+
 
 		//
 
@@ -72,26 +94,26 @@ class Level {
 			var potentialCollisions = this.quadTree.selectPoints(this.bullets[j].pos);
 			//console.log(potentialCollisions.length);
 			label1:
-			for (var i = 0; i < potentialCollisions.length; i++) {
-				//if (potentialCollisions[i] == player)
-				//	continue;
+				for (var i = 0; i < potentialCollisions.length; i++) {
+					//if (potentialCollisions[i] == player)
+					//	continue;
 
-				var samples = 8;
-				var step = 1 / samples;
+					var samples = 8;
+					var step = 1 / samples;
 
-				for (var k = 0, fraction = 0.0; k < samples; k++, fraction += step) {
+					for (var k = 0, fraction = 0.0; k < samples; k++, fraction += step) {
 
-					if (potentialCollisions[i].isPointIntersecting2(this.bullets[j].pos.add(this.bullets[j].vel.mul(deltaTime * fraction)))) {
-						potentialCollisions[i].health -= this.bullets[j].damage;
-						this.bullets[j].remove = true;
-						console.log("hit!!");
-						break label1;
+						if (potentialCollisions[i].isPointIntersecting2(this.bullets[j].pos.add(this.bullets[j].vel.mul(deltaTime * fraction)))) {
+							potentialCollisions[i].health -= this.bullets[j].damage;
+							this.bullets[j].remove = true;
+							console.log("hit!!");
+							break label1;
+						}
+
+
 					}
 
-
 				}
-
-			}
 
 
 
@@ -303,7 +325,7 @@ class Level {
 
 	}
 
-	aStarSearch(startX, startY, endX, endY, view) {
+	aStarSearch(startX, startY, endX, endY) {
 		var path = new Array();
 		if (startX == endX && startY == endY)
 			return path;
@@ -438,7 +460,7 @@ class Chunk {
 		this.offscreenCanvas = document.createElement('canvas');
 		this.offscreenCanvas.width = level.chunkSize * level.tileSize;
 		this.offscreenCanvas.height = level.chunkSize * level.tileSize;
-		this.ctx = this.offscreenCanvas.getContext('2d')
+		this.ctx = this.offscreenCanvas.getContext('2d');
 
 	}
 
@@ -450,9 +472,9 @@ class PriorityQueue {
 	}
 
 	push(element, priority) {
-		priority = -priority
+		priority = -priority;
 		for (var i = 0; i < this.data.length && this.data[i][1] > priority; i++);
-		this.data.splice(i, 0, [element, priority])
+		this.data.splice(i, 0, [element, priority]);
 	}
 
 	pop() {
