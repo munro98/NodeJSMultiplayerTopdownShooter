@@ -9,7 +9,6 @@ if (typeof exports !== "undefined") {
 class Entity {
 	constructor(size, pos) {
 		this.pos = pos;
-		this.posCenter = pos.add(new Vec2(size / 2, size / 2));
 		this.vel = new Vec2(0, 0);
 
 		this.width = size;
@@ -55,8 +54,6 @@ class Entity {
 			this.vel.y = 0;
 		}
 		//*/
-
-		this.posCenter = this.pos.add(new Vec2(this.width / 2, this.height / 2));
 
 		this.lifeTime += deltaTime;
 

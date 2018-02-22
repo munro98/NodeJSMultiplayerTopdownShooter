@@ -284,8 +284,9 @@ window.onload = async function () {
     zombieList.splice(index, 1);
   });
 
-  socket.on('zombiePosition', function (index, x, y) {
+  socket.on('zombiePosition', function (index, x, y, vx, vy) {
     zombieList[index].pos = new Vec2(x, y);
+    zombieList[index].vel = new Vec2(vx, vy);
   });
   
 
@@ -448,7 +449,7 @@ function tick() {
   mouseWorld = mouseWorld.sub(cameraPosition);
 
   //console.log(mouseWorld.x + " "+mouseWorld.y);
-  var mousePlayer = mouseWorld.sub(player.posCenter);
+  var mousePlayer = mouseWorld.sub(player.getCenter());
   //console.log(mousePlayer.x + " " + mousePlayer.y);
   if (mouseMoved) {
     mouseMoved = false;
@@ -460,7 +461,7 @@ function tick() {
   mouseWorldGrid.x = Math.max(0, Math.min(level.width, mouseWorldGrid.x));
   mouseWorldGrid.y = Math.max(0, Math.min(level.width, mouseWorldGrid.y));
 
-  var zombieGrid = new Vec2(Math.floor(zombie.posCenter.x / 32), Math.floor(zombie.posCenter.y / 32));
+  var zombieGrid = new Vec2(Math.floor(zombie.getCenter().x / 32), Math.floor(zombie.getCenter().y / 32));
   zombieGrid.x = Math.max(0, Math.min(level.width, zombieGrid.x));
   zombieGrid.y = Math.max(0, Math.min(level.width, zombieGrid.y));
 
@@ -510,6 +511,23 @@ function tick() {
     bulletList[i].update(level, deltaTime);
   }
   //*/
+  var quadTree = new QuadTree(0, 0, 3200, 0);
+
+  for (let i = 0; i < this.zombieList.length; i++) {
+    let z = this.zombieList[i];
+    quadTree.addEntity(z);
+  }
+
+  let playersAndZombies = this.zombieList;
+
+  let potentialCollisions = quadTree.selectBoxes(player);
+  for (let i = 0; i < potentialCollisions.length; i++) {
+    if (player.isIntersecting(potentialCollisions[i])) {
+      player.resolveCollision(potentialCollisions[i]);
+
+    }
+  }
+
 
   /*
 

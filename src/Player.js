@@ -43,7 +43,7 @@ class Player extends Actor {
 	}
 
 	updateClient(deltaTime, level) {
-		var vec3 = cameraPosition.add(this.posCenter); // position of player screen space
+		var vec3 = cameraPosition.add(this.getCenter()); // position of player screen space
 		var relvec3 = new Vec2(mouseX, mouseY).sub(vec3);
 
 		this.rotation = Math.atan(relvec3.y / relvec3.x) * 180 / Math.PI;

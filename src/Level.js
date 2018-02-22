@@ -44,10 +44,25 @@ class Level {
 
 	}
 
-	updateServer(deltaTime, serverNet) {
+	updateServer(deltaTime, serverNet, allPlayers) {
+		this.players = new Array();
+
+		//console.log(allPlayers);
+
+		for (let i = 0; i < allPlayers.length; i++) {
+			let p = allPlayers[i].player;
+			this.players.push(p);
+		}
+
+		this.players.push();
+
 		if (this.first == false) {
 			this.first = true;
 			let z = new Zombie(new Vec2(800, 1800));
+			this.zombies.push(z);
+			serverNet.broadcastCreateZombie(z);
+
+			z = new Zombie(new Vec2(1000, 1800));
 			this.zombies.push(z);
 			serverNet.broadcastCreateZombie(z);
 
@@ -62,7 +77,7 @@ class Level {
 			this.zombies[i].update(this, deltaTime);
 		}
 
-		
+
 
 
 		//
@@ -82,6 +97,29 @@ class Level {
 
 			this.quadTree.addEntity(p);
 		}
+
+
+		for (let i = 0; i < this.zombies.length; i++) {
+			let z = this.zombies[i];
+
+			this.quadTree.addEntity(z);
+		}
+
+		let playersAndZombies = this.zombies;
+
+		for (let j = 0; j < playersAndZombies.length; j++) {
+			let potentialCollisions = this.quadTree.selectBoxes(playersAndZombies[j]);
+
+			for (let i = 0; i < potentialCollisions.length; i++) {
+				if (playersAndZombies[j] == potentialCollisions[i])
+					continue;
+				if (playersAndZombies[j].isIntersecting(potentialCollisions[i])) {
+					playersAndZombies[j].resolveCollision(potentialCollisions[i]);
+
+				}
+			}
+		}
+
 
 		return;
 

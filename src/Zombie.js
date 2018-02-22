@@ -25,10 +25,7 @@ class Zombie extends Actor {
 	update(level, deltaTime) {
 
 		if (this.periodicTimer.trigger(deltaTime)) {
-
-			if (true) {
-
-			}
+			
 
 			//var mouseWorldGrid = new Vec2(Math.floor(player.posCenter.x / 32), Math.floor(player.posCenter.y / 32));
 
@@ -36,7 +33,7 @@ class Zombie extends Actor {
 			mouseWorldGrid.x = Math.max(0, Math.min(level.width, mouseWorldGrid.x));
 			mouseWorldGrid.y = Math.max(0, Math.min(level.width, mouseWorldGrid.y));
 
-			var zombieGrid = new Vec2(Math.floor(this.posCenter.x / 32), Math.floor(this.posCenter.y / 32));
+			var zombieGrid = new Vec2(Math.floor(this.getCenter().x / 32), Math.floor(this.getCenter().y / 32));
 			zombieGrid.x = Math.max(0, Math.min(level.width, zombieGrid.x));
 			zombieGrid.y = Math.max(0, Math.min(level.width, zombieGrid.y));
 
@@ -48,7 +45,7 @@ class Zombie extends Actor {
 			this.targetPos = new Vec2(this.path[this.currentIndexOnPath].x * level.tileSize + 16, this.path[this.currentIndexOnPath].y * level.tileSize + 16);
 		}
 
-		var deltaPos = this.targetPos.sub(this.posCenter);
+		var deltaPos = this.targetPos.sub(this.getCenter());
 
 		if (deltaPos.mag() < level.tileSize) {
 			this.currentIndexOnPath = Math.min(this.currentIndexOnPath + 1, this.path.length - 1);
@@ -62,10 +59,6 @@ class Zombie extends Actor {
 			this.vel = this.vel.normalized().mul(this.maxVel);
 		}
 
-		//if (deltaPos.mag() == 0) {
-		//	this.vel = this.vel.mul(25 * deltaTime);
-		//}
-
 		this.rotation = Math.atan(deltaPos.y / deltaPos.x) * 180 / Math.PI;
 		if (deltaPos.x >= 0.0) {
 			this.rotation += 180;
@@ -77,9 +70,6 @@ class Zombie extends Actor {
 	}
 
 	hit(v) {
-		//if(this.pos.x+this.width / 2 < v.x || this.pos.x-this.width  / 2 > v.x ) return false;
-		//if(this.pos.y+this.height / 2 < v.y || this.pos.y-this.height  / 2 > v.y ) return false;
-
 		if (this.pos.x + this.width / 2 < v.x || this.pos.x - this.width / 2 > v.x) return false;
 		if (this.pos.y + this.height / 2 < v.y || this.pos.y - this.height / 2 > v.y) return false;
 

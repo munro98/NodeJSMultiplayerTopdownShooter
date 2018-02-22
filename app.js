@@ -229,7 +229,7 @@ function update() {
 
 	// Server simulation
 
-	level.updateServer(deltaTime, serverNet);
+	level.updateServer(deltaTime, serverNet, allPlayers);
 
 	//Build Quadtree
 	var quadTree = new QuadTree(0, 0, 3200, 0);
@@ -276,7 +276,7 @@ function update() {
 
 		for (let j = 0; j < level.zombies.length; j++) {
 			let z = level.zombies[j];
-			sP.socket.emit('zombiePosition', j, z.pos.x, z.pos.y);
+			sP.socket.emit('zombiePosition', j, z.pos.x, z.pos.y, z.vel.x, z.vel.y);
 		}
 	}
 
